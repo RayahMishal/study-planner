@@ -1,1 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Study Planner</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: linear-gradient(135deg, #ffe6f0, #e6f3ff);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      color: #444;
+    }
+
+    .container {
+      background: #fff;
+      padding: 25px;
+      border-radius: 25px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+      max-width: 650px;
+      width: 100%;
+      text-align: center;
+      border: 3px solid #ffd6eb;
+    }
+
+    h2 {
+      color: #5b5c99;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin: 12px 0 5px;
+      font-weight: bold;
+      color: #555;
+    }
+
+    input {
+      padding: 10px;
+      width: 90%;
+      border-radius: 15px;
+      border: 2px solid #cde4ff;
+      margin-bottom: 15px;
+      text-align: center;
+      font-size: 15px;
+      background-color: #fdfaff;
+    }
+
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 20px;
+      margin: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      transition: 0.3s;
+    }
+
+    .calc-btn { background: #a0c4ff; color: #fff; }
+    .calc-btn:hover { background: #74a3f2; }
+
+    .rev-btn { background: #ffc8dd; color: #444; }
+    .rev-btn:hover { background: #ff99c8; }
+
+    .lang-btn { background: #ffbde6; color: #fff; }
+    .lang-btn:hover { background: #ff94d2; }
+
+    .methods-btn { background: #bde0fe; color: #444; }
+    .methods-btn:hover { background: #91c9fd; }
+
+    #result, #methods {
+      margin-top: 18px;
+      font-weight: bold;
+      color: #5b3f92;
+      min-height: 25px;
+    }
+
+    table {
+      margin: 15px auto;
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th { background: #ffe6f7; }
+    td { background: #f5faff; }
+
+    footer {
+      margin-top: auto;
+      padding: 15px;
+      text-align: center;
+      font-size: 14px;
+      color: #666;
+      background: #fff0f6;
+      border-top: 2px solid #ffccf2;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 id="title">📘 Smart Study Planner</h2>
+
+    <label id="lblLectures">Total Lectures:</label>
+    <input type="number" id="lectures">
+
+    <label id="lblDays">Number of Days (Deadline):</label>
+    <input type="number" id="days">
+
+    <div>
+      <button class="calc-btn" onclick="generatePlan(false)" id="btnCalculate">Normal Plan</button>
+      <button class="rev-btn" onclick="generatePlan(true)" id="btnRevision">Study + Revision Plan</button>
+      <button class="methods-btn" onclick="showMethods()" id="btnMethods">Study Methods</button>
+      <button class="lang-btn" onclick="switchLang()">🌐 عربي / English</button>
+    </div>
+
+    <div id="result"></div>
+    <div id="methods"></div>
+  </div>
+
+  <footer id="footer">
+    Developed by <b>Rayah Mishal Almutairi</b>, قرطاسية راية
+  </footer>
+
+  <script>
+    let lang = "en";
+
+    const studyMethods = {
+      en: {
+        "Pomodoro Technique": "Study in 25-minute sessions with 5-minute breaks. After 4 sessions, take a longer 15–30 minute break.",
+        "Spaced Repetition": "Review material at increasing intervals (Day 1, Day 3, Day 7…) to strengthen long-term memory.",
+        "Active Recall": "Test yourself actively instead of re-reading. Ask questions and answer from memory.",
+        "Feynman Technique": "Explain what you studied in simple words as if teaching someone else.",
+        "Interleaving": "Mix different topics/lectures in one session instead of focusing on just one."
+      },
+      ar: {
+        "تقنية بومودورو": "ادرس لمدة 25 دقيقة ثم خذ استراحة 5 دقائق. بعد 4 جلسات، خذ استراحة أطول من 15–30 دقيقة.",
+        "التكرار المتباعد": "راجع المادة بفواصل متزايدة (اليوم 1، اليوم 3، اليوم 7...) لتعزيز الذاكرة.",
+        "الاستدعاء النشط": "اختبر نفسك بدل إعادة القراءة. اسأل وأجب من ذاكرتك.",
+        "تقنية فاينمان": "اشرح ما درسته بكلمات بسيطة كما لو كنت تعلم شخصًا آخر.",
+        "التعلم المتداخل": "اخلط بين مواضيع مختلفة في جلسة واحدة بدل التركيز على موضوع واحد."
+      }
+    };
+
+    function generatePlan(withRevision) {
+      let lectures = parseInt(document.getElementById("lectures").value) || 0;
+      let days = parseInt(document.getElementById("days").value);
+
+      if (lectures <= 0 || days <= 0) {
+        alert(lang === "en" ? "Please enter valid numbers!" : "الرجاء إدخال أرقام صحيحة!");
+        return;
+      }
+
+      let lecturesPerDay = Math.ceil(lectures / days);
+      let schedule = [];
+      let currentLecture = 1;
+
+      // --- Generate normal plan ---
+      for (let d = 1; d <= days; d++) {
+        let todaysLectures = [];
+        for (let j = 0; j < lecturesPerDay && currentLecture <= lectures; j++) {
+          todaysLectures.push(currentLecture);
+          currentLecture++;
+        }
+        schedule.push({ day: d, study: todaysLectures, review: [] });
+      }
+
+      // --- Add revision if selected ---
+      if (withRevision) {
+        schedule.forEach(dayPlan => {
+          dayPlan.study.forEach(lec => {
+            if (dayPlan.day + 2 <= days) schedule[dayPlan.day + 1].review.push(lec);
+            if (dayPlan.day + 6 <= days) schedule[dayPlan.day + 5].review.push(lec);
+          });
+        });
+      }
+
+      // --- Build output table ---
+      let table = "<table><tr>";
+      table += lang === "en" ? "<th>Day</th><th>Plan</th></tr>" : "<th>اليوم</th><th>الخطة</th></tr>";
+
+      schedule.forEach(dayPlan => {
+        let planText = "";
+        if (dayPlan.study.length > 0) {
+          planText += (lang === "en" ? "Study lectures: " : "ادرس المحاضرات: ") + dayPlan.study.join(", ");
+        }
+        if (dayPlan.review.length > 0) {
+          if (planText) planText += " | ";
+          planText += (lang === "en" ? "Review lectures: " : "راجع المحاضرات: ") + dayPlan.review.join(", ");
+        }
+        if (planText === "") planText = lang === "en" ? "Rest / Free day" : "راحة / يوم فراغ";
+        table += `<tr><td>${lang === "en" ? "Day " : "اليوم "} ${dayPlan.day}</td><td>${planText}</td></tr>`;
+      });
+
+      table += "</table>";
+      document.getElementById("result").innerHTML = table;
+    }
+
+    function showMethods() {
+      let out = "<h3>" + (lang === "en" ? "📖 Study Methods" : "📖 طرق المذاكرة") + "</h3><ul style='text-align:left;'>";
+      for (const [method, desc] of Object.entries(studyMethods[lang])) {
+        out += `<li><b>${method}</b>: ${desc}</li><br>`;
+      }
+      out += "</ul>";
+      document.getElementById("methods").innerHTML = out;
+    }
+
+    function switchLang() {
+      lang = (lang === "en") ? "ar" : "en";
+      if (lang === "en") {
+        document.getElementById("title").innerText = "📘 Smart Study Planner";
+        document.getElementById("lblLectures").innerText = "Total Lectures:";
+        document.getElementById("lblDays").innerText = "Number of Days (Deadline):";
+        document.getElementById("btnCalculate").innerText = "Normal Plan";
+        document.getElementById("btnRevision").innerText = "Study + Revision Plan";
+        document.getElementById("btnMethods").innerText = "Study Methods";
+        document.getElementById("footer").innerHTML = "Developed by <b>Rayah Mishal Almutairi</b>, قرطاسية راية";
+      } else {
+        document.getElementById("title").innerText = "📘 مخطط مذاكرة ذكي";
+        document.getElementById("lblLectures").innerText = "إجمالي المحاضرات:";
+        document.getElementById("lblDays").innerText = "عدد الأيام (الموعد النهائي):";
+        document.getElementById("btnCalculate").innerText = "الخطة العادية";
+        document.getElementById("btnRevision").innerText = "خطة دراسة + مراجعة";
+        document.getElementById("btnMethods").innerText = "طرق المذاكرة";
+        document.getElementById("footer").innerHTML = "تم التطوير بواسطة <b>Rayah Mishal Almutairi</b>, قرطاسية راية";
+      }
+      document.getElementById("methods").innerHTML = "";
+      document.getElementById("result").innerHTML = "";
+    }
+  </script>
+</body>
+</html>
 
